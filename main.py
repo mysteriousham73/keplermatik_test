@@ -1,4 +1,5 @@
 import json
+import uuid
 
 import websocket
 import _thread
@@ -60,6 +61,8 @@ class Observer:
         self.longitude = longitude
         self.name = name
 
+
+
 def on_message(ws, message):
     now = datetime.now()
 
@@ -99,7 +102,7 @@ def on_message(ws, message):
             message2 = '{"event": "unsubscribe", "satellites": [44881], "observer_uuid": "' + uuid + '"}'
             print(message2)
             sleep(1)
-            ws.send(message2)
+            #ws.send(message2)
 
         if m_object['event'] == "unsubscribe_confirmed":
             line = current_time + " UNSUBSCRIBE CONFIRMED | "
