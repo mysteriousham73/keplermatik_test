@@ -2,8 +2,6 @@ import json
 import uuid
 
 import websocket
-import _thread
-import time
 import rel
 from datetime import datetime
 from time import sleep
