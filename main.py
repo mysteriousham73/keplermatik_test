@@ -5,6 +5,7 @@ import websocket
 import rel
 from datetime import datetime
 from time import sleep
+from collections import defaultdict
 
 hamsats = {
         47311: "AO-109",
@@ -51,6 +52,7 @@ hamsats = {
         40910: "XW-2F"}
 
 observers = {}
+prediction_requests = {}
 
 class Observer:
     def __init__(self, latitude, longitude, name=None):
@@ -90,31 +92,32 @@ def on_message(ws, message):
             ws.send(message)
 
         if m_object['event'] == "subscription_confirmed":
-            line = current_time + " SUBSCRIPTION CONFIRMED | "
-            for norad_cat_id in m_object['satellites']:
-                line += str(norad_cat_id) + ", "
+            print(current_time + " SUBSCRIPTION CONFIRMED | " + str(len(m_object['prediction_requests'])) + " PREDICTION REQUESTS")
 
-            line = line[0:len(line)-2]
-            print(line)
-            uuid = list(observers.values())[0]['uuid']
-            message2 = '{"event": "unsubscribe", "satellites": [44881], "observer_uuid": "' + uuid + '"}'
-            print(message2)
-            sleep(1)
-            #ws.send(message2)
+            for prediction_request in m_object['prediction_requests']:
+                prediction_requests[prediction_request['norad_cat_id']] = prediction_request
+
+            message2 = '{"event": "unsubscribe", "prediction_request_uuids": ["' + prediction_requests['44881']['prediction_request_uuid'] + '"]}'
+
+            ws.send(message2)
 
         if m_object['event'] == "unsubscribe_confirmed":
             line = current_time + " UNSUBSCRIBE CONFIRMED | "
-            for norad_cat_id in m_object['satellites']:
-                line += str(norad_cat_id) + ", "
+            for prediction_request_uuid in m_object['prediction_request_uuids']:
+                line += str(prediction_request_uuid) + ", "
 
             line = line[0:len(line)-2]
 
             print(line)
+
+        if m_object['event'] == "system_status":
+            print(current_time + " SYSTEM_STATUS | " + json.dumps(m_object))
 
     else:
         if "predictions" in m_object:
             for prediction in m_object['predictions']:
-                print(current_time + " PREDICTION RECEIVED | " + prediction['name'] + " (" + str(prediction['norad_cat_id']) + ")  " + "Azimuth: " + str(prediction['azimuth']) + "  Elevation: " + str(prediction['elevation']) + "  Timestamp: " + str(prediction['timestamp']))
+                if(prediction['norad_cat_id'] == 44881 or prediction['norad_cat_id'] == 7530):
+                    print(current_time + " PREDICTION RECEIVED | " + prediction['name'] + " (" + str(prediction['norad_cat_id']) + ")  " + "Azimuth: " + str(prediction['azimuth']) + "  Elevation: " + str(prediction['elevation']) + "  Timestamp: " + str(prediction['timestamp']))
 
 def on_error(ws, error):
     print("error: " + str(error))
