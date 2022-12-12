@@ -116,7 +116,7 @@ def on_message(ws, message):
     else:
         if "predictions" in m_object:
             for prediction in m_object['predictions']:
-                if(prediction['norad_cat_id'] == 44881 or prediction['norad_cat_id'] == 7530):
+                if(prediction['elevation'] > 0):
                     print(current_time + " PREDICTION RECEIVED | " + prediction['name'] + " (" + str(prediction['norad_cat_id']) + ")  " + "Azimuth: " + str(prediction['azimuth']) + "  Elevation: " + str(prediction['elevation']) + "  Timestamp: " + str(prediction['timestamp']))
 
 def on_error(ws, error):
