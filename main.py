@@ -4,9 +4,9 @@ import uuid
 import websocket
 import rel
 from datetime import datetime
-from time import sleep
-from collections import defaultdict
+import keplermatik_map
 
+tuimap = keplermatik_map.KeplermatikMap()
 hamsats = {
         47311: "AO-109",
         22825: "AO-27",
@@ -116,8 +116,11 @@ def on_message(ws, message):
     else:
         if "predictions" in m_object:
             for prediction in m_object['predictions']:
-                if(prediction['elevation'] > 0):
-                    print(current_time + " PREDICTION RECEIVED | " + prediction['name'] + " (" + str(prediction['norad_cat_id']) + ")  " + "Azimuth: " + str(prediction['azimuth']) + "  Elevation: " + str(prediction['elevation']) + "  Timestamp: " + str(prediction['timestamp']))
+                if(prediction['norad_cat_id'] == 25544):
+                    #print(current_time + " PREDICTION RECEIVED | " + prediction['name'] + " (" + str(prediction['norad_cat_id']) + ")  " + "Azimuth: " + str(prediction['azimuth']) + "  Elevation: " + str(prediction['elevation']) + "  Timestamp: " + str(prediction['timestamp']))
+                    tuimap.update_map(prediction['latitude'], prediction['longitude'])
+
+
 
 def on_error(ws, error):
     print("error: " + str(error))
