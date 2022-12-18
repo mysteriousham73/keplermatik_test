@@ -1,0 +1,66 @@
+#
+#     Copyright (C) 2019-present Nathan Odle
+#
+#     This program is free software: you can redistribute it and/or modify
+#     it under the terms of the Server Side Public License, version 1,
+#     as published by MongoDB, Inc.
+#
+#     This program is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#     Server Side Public License for more details.
+#
+#     You should have received a copy of the Server Side Public License
+#     along with this program. If not, email mysteriousham73@gmail.com
+#
+#     As a special exception, the copyright holders give permission to link the
+#     code of portions of this program with the OpenSSL library under certain
+#     conditions as described in each individual source file and distribute
+#     linked combinations including the program with the OpenSSL library. You
+#     must comply with the Server Side Public License in all respects for
+#     all of the code used other than as permitted herein. If you modify file(s)
+#     with this exception, you may extend this exception to your version of the
+#     file(s), but you are not obligated to do so. If you do not wish to do so,
+#     delete this exception statement from your version. If you delete this
+#     exception statement from all source files in the program, then also delete
+#     it in the license file.
+import os
+clear = lambda: os.system('cls')
+
+
+
+class KeplermatikMap():
+    def __init__(self):
+        with open('dist/map.txt', 'r') as file:
+            self.original_map_string = file.read()
+        self.map_string = self.original_map_string
+
+    #multiple sats ANSI color makes the map_string length different
+    def update_map(self, latitude, longitude):
+        self.map_string = self.original_map_string
+        position = self.calculate_map_coordinates(latitude, longitude)
+        self.map_string = "\033[37m" + self.map_string[:position] + "\033[91mO\033[37m" + self.map_string[position + 1:]
+        os.system('cls')
+        print(self.map_string)
+
+    def calculate_map_coordinates(self, latitude, longitude):
+
+        #print(str(latitude) + " " + str(longitude))
+        unit_latitude = (90 + latitude) / 180
+        unit_longitude = (longitude + 180 ) / 360
+
+        #print(str(unit_latitude) + " " + str(unit_longitude))
+        map_rows = self.map_string.count('\n') + 1
+        map_columns = int(((len(self.map_string) - 1) / map_rows))
+
+        #print(str(map_rows) + " " + str(map_columns))
+
+
+        latitude_character = map_rows - int(round(unit_latitude * map_rows, 0))
+        longitude_character = int(round(unit_longitude * map_columns, 0))
+
+        #print(str(latitude_character) + " " + str(longitude_character))
+
+        string_position = (map_columns + 1) * latitude_character + longitude_character
+
+        return int(string_position)

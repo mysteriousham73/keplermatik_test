@@ -6,7 +6,7 @@ import rel
 from datetime import datetime
 import keplermatik_map
 
-tuimap = keplermatik_map.KeplermatikMap()
+tuimap = keplermatik_map.TUIMap()
 hamsats = {
         47311: "AO-109",
         22825: "AO-27",

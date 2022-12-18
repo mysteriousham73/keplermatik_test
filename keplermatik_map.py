@@ -1,66 +1,109 @@
-#
-#     Copyright (C) 2019-present Nathan Odle
-#
-#     This program is free software: you can redistribute it and/or modify
-#     it under the terms of the Server Side Public License, version 1,
-#     as published by MongoDB, Inc.
-#
-#     This program is distributed in the hope that it will be useful,
-#     but WITHOUT ANY WARRANTY; without even the implied warranty of
-#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-#     Server Side Public License for more details.
-#
-#     You should have received a copy of the Server Side Public License
-#     along with this program. If not, email mysteriousham73@gmail.com
-#
-#     As a special exception, the copyright holders give permission to link the
-#     code of portions of this program with the OpenSSL library under certain
-#     conditions as described in each individual source file and distribute
-#     linked combinations including the program with the OpenSSL library. You
-#     must comply with the Server Side Public License in all respects for
-#     all of the code used other than as permitted herein. If you modify file(s)
-#     with this exception, you may extend this exception to your version of the
-#     file(s), but you are not obligated to do so. If you do not wish to do so,
-#     delete this exception statement from your version. If you delete this
-#     exception statement from all source files in the program, then also delete
-#     it in the license file.
+import numpy as np
+from PIL import Image
+import copy
+
+from os import environ as env
+import platform
 import os
-clear = lambda: os.system('cls')
+
+ESC = '\u001B['
+eraseScreen = ESC + '2J'
+
+if platform.system() == 'Windows':
+    clearTerminal = '{}{}0f'.format(eraseScreen, ESC)
+    # 1. Erases the screen (Only done in case '2' is not supported)
+    # 2. Erases the whole screen including scrollback buffer
+    # 3. Moves cursor to the top-left position
+    # More info: https://www.real-world-systems.com/docs/ANSIcode.html
+else:
+    clearTerminal = '{}{}3J{}H'.format(eraseScreen, ESC, ESC)
 
 
 
-class KeplermatikMap():
+class TUIMap():
     def __init__(self):
-        with open('dist/map.txt', 'r') as file:
-            self.original_map_string = file.read()
-        self.map_string = self.original_map_string
+        self.satellite_latitude = 0
+        self.satellite_longitude = 0
+        self.previous_row = 0
+        self.previous_col = 0
+        self.character_columns = 160
+        self.character_rows = 50
+        # Load the input image
+        self.image = Image.open("dist/map.png")
+        #self.image = self.image.resize((self.character_columns, self.character_rows))
 
-    #multiple sats ANSI color makes the map_string length different
-    def update_map(self, latitude, longitude):
-        self.map_string = self.original_map_string
-        position = self.calculate_map_coordinates(latitude, longitude)
-        self.map_string = "\033[37m" + self.map_string[:position] + "\033[91mO\033[37m" + self.map_string[position + 1:]
-        os.system('cls')
-        print(self.map_string)
+        # Create the text image with 50 character columns and 30 character rows
+        self.base_image = self.create_text_image()
+        self.map_buffer = copy.deepcopy(self.base_image)
 
-    def calculate_map_coordinates(self, latitude, longitude):
+    def create_text_image(self):
+        # Convert the input image to a numpy array
+        image_array = np.array(self.image)
+        #print (image_array)
 
-        #print(str(latitude) + " " + str(longitude))
-        unit_latitude = (90 - latitude) / 180
-        unit_longitude = (longitude + 180 ) / 360
+        # Get the dimensions of the input image
+        self.image_height, self.image_width = image_array.shape
 
-        #print(str(unit_latitude) + " " + str(unit_longitude))
-        map_rows = self.map_string.count('\n') + 1
-        map_columns = int(((len(self.map_string) - 1) / map_rows))
+        # Calculate the width and height of each character in the output text image
+        character_width = self.image_width / self.character_columns
+        character_height = self.image_height / self.character_rows
 
-        #print(str(map_rows) + " " + str(map_columns))
+        # Create an empty list to store the text image
+        text_image = []
+
+        # Iterate over the rows and columns of the output text image
+        for row in range(self.character_rows):
+            text_image.append([])
+            for col in range(self.character_columns):
+                # Calculate the average color of the corresponding area in the input image
+                average_color = np.mean(image_array[int(row * character_height):int((row + 1) * character_height), int(col * character_width):int((col + 1) * character_width)], axis=(0, 1))
+                #print(average_color)
+                # Convert the average color to a character
+                if average_color < .7:
+                    # Black pixel
+                    text_image[row].append("X")
+                else:
+                    # White pixel
+                    text_image[row].append(" ")
+
+        return text_image
+
+    def update_map(self, lat, lon):
+        self.satellite_latitude = lat
+        self.satellite_longitude = lon
+        # Calculate the width and height of each character in the output text image
+        character_width = self.image_width / self.character_columns
+        character_height = self.image_height / self.character_rows
+
+        # Map the latitude and longitude to the corresponding row and column
+        row = int((90 - lat) / 180 * self.character_rows)
+        col = int((180 + lon) / 360 * self.character_columns)
+
+        #print(self.previous_row)
+        #print(self.previous_col)
+        #print(row)
+        #print(col)
+
+        if (self.previous_row != row or self.previous_col != col):
+
+            self.map_buffer[self.previous_row][self.previous_col] = self.base_image[self.previous_row][self.previous_col]
+
+            self.map_buffer[row][col] = "\033[37m\033[91mO\033[37m"
+            self.previous_row = row
+            self.previous_col = col
+
+            print(clearTerminal)
+            print("\033[37m")
+            for row in self.map_buffer:
+                print("".join(row))
 
 
-        latitude_character = map_rows - int(round(unit_latitude * map_rows, 0))
-        longitude_character = int(round(unit_longitude * map_columns, 0))
 
-        #print(str(latitude_character) + " " + str(longitude_character))
+        #self.satellite_latitude = lat
+        #self.satellite_longitude = lon
 
-        string_position = (map_columns + 1) * latitude_character + longitude_character
+        return row, col
 
-        return int(string_position)
+
+
+
